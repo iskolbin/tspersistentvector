@@ -1,0 +1,15 @@
+{
+  "name": "tspersistentvector",
+  "main": "./lib/index.js",
+  "repository": "github.com/iskolbin/tspersistentvector",
+  "description": "Java PVec port to TS",
+  "version": "0.1.0",
+  "license": "MIT",
+  "scripts": {
+    "build": "./node_modules/typescript/bin/tsc",
+    "prepublish": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^2.3.2"
+  }
+}
