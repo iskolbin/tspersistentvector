@@ -328,7 +328,7 @@ export class PersistentVector<T> {
 	}
 	 */
 	forEach<Z>( callbackfn: (this: Z, value: T, index: number, vec: PersistentVector<T>) => void, thisArg?: Z ): void {
-		const iter = new PersistentVectorIterator<T>( this._length, this.shift, this.root, this.tail )
+		const iter = this.iterator()
 		while ( iter.hasNext()) {
 			callbackfn.call( thisArg, iter.getNext(), iter.index-1, this )
 		}
@@ -336,7 +336,7 @@ export class PersistentVector<T> {
 
 	reduce( callbackfn: ( previousValue: T, currentValue: T, currentIndex: number, vec: PersistentVector<T> ) => T, initialValue?: T ): T
 	reduce<U>( callbackfn: ( previousValue: U, currentValue: T, currentIndex: number, vec: PersistentVector<T> ) => U, initialValue: U ): U {
-		const iter = new PersistentVectorIterator<T>( this._length, this.shift, this.root, this.tail )
+		const iter = this.iterator()
 		let acc = initialValue
 		while ( iter.hasNext()) {
 			acc = callbackfn.call( acc, iter.getNext(), iter.index-1, this )
@@ -354,7 +354,7 @@ export class PersistentVector<T> {
 	}
 
 	filter<Z>( callbackfn: ( this: Z, value: T, index: number, vec: PersistentVector<T> ) => any, thisArg?: Z ): PersistentVector<T> {	
-		const iter = new PersistentVectorIterator<T>( this._length, this.shift, this.root, this.tail )
+		const iter = this.iterator()
 		const newVec = new PersistentVector<T>()
 		while ( iter.hasNext()) {
 			const v = iter.getNext()
@@ -378,7 +378,7 @@ export class PersistentVector<T> {
 	}
 
 	map<Z,U>( callbackfn: ( this: Z, value: T, index: number, vec: PersistentVector<T> ) => U, thisArg?: Z ): PersistentVector<T> {
-		const iter = new PersistentVectorIterator<T>( this._length, this.shift, this.root, this.tail )
+		const iter = this.iterator()
 		const newVec = new PersistentVector<T>()
 		while ( iter.hasNext()) {
 			newVec.__transientPush( callbackfn.call( thisArg, iter.getNext(), iter.index-1, this ))
@@ -387,7 +387,7 @@ export class PersistentVector<T> {
 	}
 
 	indexOf( v: T ): number {
-		const iter = new PersistentVectorIterator<T>( this._length, this.shift, this.root, this.tail )
+		const iter = this.iterator()
 		while ( iter.hasNext()) {
 			if ( iter.getNext() === v ) {
 				return iter.index-1
@@ -406,7 +406,7 @@ export class PersistentVector<T> {
 	}
 
 	toArray(): T[] {
-		const iter = new PersistentVectorIterator<T>( this._length, this.shift, this.root, this.tail )
+		const iter = this.iterator()
 		const array: T[] = []
 		while ( iter.hasNext()) {
 			array.push( iter.getNext())
@@ -415,7 +415,7 @@ export class PersistentVector<T> {
 	}
 	
 	every<Z>( callbackfn: ( this: Z, value: T, index: number, vec: PersistentVector<T> ) => boolean, thisArg?: Z ): boolean {
-		const iter = new PersistentVectorIterator<T>( this._length, this.shift, this.root, this.tail )
+		const iter = this.iterator()
 		while ( iter.hasNext()) {
 			if ( !callbackfn.call( thisArg, iter.getNext(), iter.index-1, this )) {
 				return false
@@ -425,7 +425,7 @@ export class PersistentVector<T> {
 	}
 
 	some<Z>( callbackfn: ( this: Z, value: T, index: number, vec: PersistentVector<T> ) => boolean, thisArg?: Z ): boolean {
-		const iter = new PersistentVectorIterator<T>( this._length, this.shift, this.root, this.tail )
+		const iter = this.iterator()
 		while ( iter.hasNext()) {
 			if ( callbackfn.call( thisArg, iter.getNext(), iter.index-1, this )) {
 				return true
@@ -437,7 +437,7 @@ export class PersistentVector<T> {
 	concat( ...vectors: PersistentVector<T>[] ): PersistentVector<T> {
 		let vec: PersistentVector<T> = this
 		for ( const v of vectors ) {
-			const iter = new PersistentVectorIterator<T>( v._length, v.shift, v.root, v.tail )
+			const iter = v.iterator()
 			while ( iter.hasNext()) {
 				vec = vec.push( iter.getNext())
 			}
@@ -446,7 +446,7 @@ export class PersistentVector<T> {
 	}
 
 	join( separator: string = ',' ): string {
-		const iter = new PersistentVectorIterator<T>( this._length, this.shift, this.root, this.tail )
+		const iter = this.iterator() 
 		const strAcc: string[] = []
 		while ( iter.hasNext()) {
 			strAcc.push( iter.getNext().toString() )
@@ -471,7 +471,11 @@ export class PersistentVector<T> {
 	sort( compareFn?: (a: T, b: T) => number ): PersistentVector<T> {
 		return new PersistentVector<T>( this.toArray().sort( compareFn ))
 	}
-	
+
+	iterator(): PersistentVectorIterator<T> {
+		return new PersistentVectorIterator<T>( this._length, this.shift, this.root, this.tail )
+	}
+
 	// TODO
 	// splice and delete
 }
