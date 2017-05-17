@@ -1,8 +1,8 @@
-import { PersistentVectorNode } from './PersistentVector'
+import { VectorNode } from './Vector'
 
-export class PersistentVectorIterator<T> {
-	protected stack: Array<PersistentVectorNode<T>>
-	protected leaf: PersistentVectorNode<T>
+export class VectorIterator<T> {
+	protected stack: Array<VectorNode<T>>
+	protected leaf: VectorNode<T>
   protected _index: number
 	protected jump: number
 	protected size: number
@@ -12,13 +12,13 @@ export class PersistentVectorIterator<T> {
 		return this._index
 	}
 
-	constructor( size: number, shift: number, root: PersistentVectorNode<T>, tail: T[] ) {
+	constructor( size: number, shift: number, root: VectorNode<T>, tail: T[] ) {
 		this.size = size
 		this.tail = tail
 		this._index = 0
 		this.jump = 32
     // top is at the end, and rank 2 nodes are at the front
-		this.stack = new Array<PersistentVectorNode<T>>( shift/5 )
+		this.stack = new Array<VectorNode<T>>( shift/5 )
 		if ( size <= 32 ) {
 			this.leaf = tail
 		} else if ( size <= 64 ) {

@@ -1,1 +1,1 @@
-export * from './PersistentVector'
+export * from './Vector'
