@@ -3,21 +3,10 @@
 // maybe custom sort (mergesort?)
 
 import { VectorIterator } from './VectorIterator'
-
-function clone<T>( xs: T[] ): T[] {
-	const ret = new Array( xs.length )
-	let i = xs.length
-	while ( i-- ) {
-		ret[i] = xs[i]
-	}
-	return ret
-}
-
-const BITS = 5
-const BRANCHING = 1 << BITS
-const MASK = BRANCHING - 1
-
-export type VectorNode<T> = any[] | undefined
+import { VectorNode } from './VectorNode'
+import { TransientVector } from './TransientVector'
+import { BITS, BRANCHING, MASK } from './VectorConst'
+import { cloneArray } from './cloneArray'
 
 export class Vector<T> {
 	protected _length = 0
@@ -27,9 +16,14 @@ export class Vector<T> {
 	
 	constructor( array?: T[] ) {
 		if ( array ) {
+			const tVec = new TransientVector<T>()
 			for ( const v of array ) {
-				this.__transientPush( v )
+				tVec.push( v )
 			}
+			this.root = tVec.root
+			this.shift = tVec.shift
+			this.tail = tVec.tail
+			this._length = tVec.length
 		}
 	}
 
@@ -41,11 +35,24 @@ export class Vector<T> {
 		return vec instanceof Vector
 	}
 
-	static filled<T>( val: T, length: number ) {
-		const vec = new Vector<T>()
+	static ofValue<T>( val: T, length: number ) {
+		const tVec = new TransientVector<T>()
 		for ( let i = 0; i < length; i++ ) {
-			vec.__transientPush( val )
+			tVec.push( val )
 		}
+		return Vector.ofTransient( tVec )
+	}
+
+	static ofTransient<T>( tVec: TransientVector<T> ): Vector<T> {
+		const vec = new Vector<T>()
+		vec._length = tVec.length
+		vec.shift = tVec.shift
+		vec.root = tVec.root
+		vec.tail = tVec.tail
+		tVec.root = undefined
+		tVec.shift = 0
+		tVec.tail = []
+		tVec.length = 0
 		return vec
 	}
 
@@ -57,19 +64,20 @@ export class Vector<T> {
 		if ( step === undefined ) {
 			step = start > finish ? -1 : 1
 		}
-		const vec = new Vector<number>()
+		const tVec = new TransientVector<number>()
 		if (( start < finish && step > 0 ) || ( start > finish && step < 0 )) {
 			if ( start > finish ) {
 				for ( let i = start; i > finish; i += step ) {
-					vec.__transientPush( i )
+					tVec.push( i )
 				}
 			} else {
 				for ( let i = start; i < finish; i += step ) {
-					vec.__transientPush( i )
+					tVec.push( i )
 				}
+
 			}
 		}
-		return vec
+		return Vector.ofTransient( tVec )
 	}
 
 	protected static make<T>( length?: number, shift?: number, root?: VectorNode<T>, tail?: T[] ): Vector<T> {
@@ -81,7 +89,7 @@ export class Vector<T> {
 		return v
 	}
 
-	clone(): Vector<T> {
+	cloneArray(): Vector<T> {
 		return Vector.make<T>( this._length, this.shift, this.root, this.tail )
 	}
 
@@ -119,13 +127,12 @@ export class Vector<T> {
 		}
 	}
 
-
 	push( ...values: T[] ): Vector<T> {
 		let vec: Vector<T> = this
 		for ( const val of values ) {
 			const ts = vec._length === 0 ? 0 : ((vec._length - 1) & MASK) + 1
 			if ( ts !== BRANCHING ) {
-				const newTail = clone( vec.tail )
+				const newTail = cloneArray( vec.tail )
 				newTail.push( val )
 				vec = Vector.make<T>( vec._length + 1, vec.shift, vec.root, newTail )
 			} else { // have to insert tail into root.
@@ -157,22 +164,27 @@ export class Vector<T> {
 		if ( i < 0 || i >= this._length || this.root === undefined ) {
 			return undefined
 		} else if (i >= this.tailOffset()) {
-			const newTail = clone( this.tail )
+			const newTail = cloneArray( this.tail )
 			newTail[i & MASK] = val
 			return Vector.make<T>( this._length, this.shift, this.root, newTail )
 		} else {
-			const newRoot = clone( this.root )
+			const newRoot = cloneArray( this.root )
 			let node = newRoot
 			for ( let level = this.shift; level > 0; level -= BITS ) {
 				const subidx = (i >>> level) & MASK
 				let child = node[subidx]
-				child = clone( child )
+				child = cloneArray( child )
 				node[subidx] = child
 				node = child
 			}
 			node[i & 31] = val
 			return Vector.make<T>( this._length, this.shift, newRoot, this.tail )
 		}
+	}
+
+	update( i: number, callbackFn: (v: T, i: number, vec: Vector<T>) => T ): Vector<T> | undefined {
+		var v = this.get( i )
+		return v === undefined ? this : this.set( i, callbackFn( v, i, this ))
 	}
 
 	pop(): Vector<T> | undefined {
@@ -183,7 +195,7 @@ export class Vector<T> {
 		} else if ((( this._length - 1 ) & 31 ) > 0 ) {
 			// This one is curious: having int ts_1 = ((size-1) & 31) and using
 			// it is slower than using tail._length - 1 and newTail._length!
-			const newTail = clone( this.tail )
+			const newTail = cloneArray( this.tail )
 			newTail.pop()
 			return Vector.make<T>(this._length - 1, this.shift, this.root, newTail)
 		}
@@ -209,7 +221,7 @@ export class Vector<T> {
 		// diverges contain information on when the path diverges.
 		const diverges = newTrieSize ^ (newTrieSize - 1)
 		let hasDiverged = false
-		const newRoot = clone( this.root )
+		const newRoot = cloneArray( this.root )
 		let node = newRoot
 		for ( let level = this.shift; level > 0; level -= BITS) {
 			const subidx = (newTrieSize >>> level) & MASK
@@ -221,15 +233,13 @@ export class Vector<T> {
 				node[subidx] = undefined
 				node = child
 			} else {
-				child = clone( child )
+				child = cloneArray( child )
 				node[subidx] = child
 				node = child
 			}
 		}
 		return Vector.make<T>( this._length - 1, this.shift, newRoot, node )
 	}
-
-
 
 	protected tailOffset(): number {
 		return (this._length - 1) & (~MASK)
@@ -247,7 +257,7 @@ export class Vector<T> {
 
 	protected pushLeaf( shift: number, i: number, root: VectorNode<T>, tail: T[] ): T[] {
 		if ( root !== undefined ) {
-			const newRoot = clone( root )
+			const newRoot = cloneArray( root )
 			let node = newRoot
 			for ( let level = shift; level > BITS; level -= BITS) {
 				const subidx = (i >>> level) & MASK
@@ -256,7 +266,7 @@ export class Vector<T> {
 					node[subidx] = this.newPath( level - BITS, tail )
 					return newRoot
 				}
-				child = clone( child )
+				child = cloneArray( child )
 				node[subidx] = child
 				node = child
 			}
@@ -267,65 +277,10 @@ export class Vector<T> {
 		}
 	}
 
-	newNode( id: any ) {
-		const node = new Array<any>( 33 )
-		node[32] = id
-		return node
-	}
-  
 	tailSize() {
 		return (this._length === 0) ? 0 : ((this._length-1) & 31) + 1
 	}
 
-	protected __transientPushLeaf( shift: number, i: number, root: VectorNode<T>, tail: T[] ): T[] {
-		if ( root !== undefined ) {
-			let node = root
-			for ( let level = shift; level > BITS; level -= BITS ) {
-				const subidx = (i >>> level) & MASK
-				let child = node[subidx]
-				if ( child === undefined ) {
-					node[subidx] = this.newPath( level - BITS, tail )
-					return root
-				}
-				node[subidx] = child
-				node = child
-			}
-			node[(i >>> BITS) & MASK] = tail
-			return root
-		} else {
-			return []
-		}
-	}
-
-	__transientPush( val: T ): Vector<T> {
-		const ts = this._length === 0 ? 0 : ((this._length - 1) & MASK) + 1
-		if ( ts !== BRANCHING ) {
-			this.tail.push( val )
-		} else { // have to insert tail into root.
-			const newTail = [val]
-			// Special case: If old size == BRANCHING, then tail is new root
-			if ( this._length === BRANCHING ) {
-				this.root = this.tail
-				this.tail = newTail
-			} else {
-				// check if the root is completely filled. Must also increment
-				// shift if that's the case.
-				if (( this._length >>> BITS ) > ( 1 << this.shift )) {
-					const newRoot = new Array( BRANCHING )
-					newRoot[0] = this.root
-					newRoot[1] = this.newPath( this.shift, this.tail )
-					this.shift += BITS
-					this.root = newRoot
-					this.tail = newTail
-				} else { // still space in root
-					this.root = this.__transientPushLeaf( this.shift, this._length - 1, this.root, this.tail )
-					this.tail = newTail
-				}
-			}
-		}
-		this._length++
-		return this
-	}
 	/*
 	[Symbol.iterator]() {
 		return Vector.makeIterator<T>( this._length, this.shift, this.root, this.tail )
@@ -359,35 +314,35 @@ export class Vector<T> {
 
 	filter<Z>( callbackfn: ( this: Z, value: T, index: number, vec: Vector<T> ) => any, thisArg?: Z ): Vector<T> {	
 		const iter = this.iterator()
-		const newVec = new Vector<T>()
+		const tVec = new TransientVector<T>()
 		while ( iter.hasNext()) {
 			const v = iter.getNext()
 			if ( callbackfn.call( thisArg, v, iter.index - 1, this )) {
-				newVec.__transientPush( v )
+				tVec.push( v )
 			}
 		}
-		return newVec
+		return Vector.ofTransient( tVec )
 	}
 
 	slice( start: number = 0, end: number = this.length ): Vector<T> {
 		start = start < 0 ? this.length + start : start
 		end = Math.min( this.length, end < 0 ? this.length + end : end )
-		const newVec = new Vector<T>()
+		const tVec = new TransientVector<T>()
 		if ( start < end && end <= this.length ) {
 			for ( let i = start; i < end; i++ ) {
-				newVec.__transientPush( (<T>this.get( i )))
+				tVec.push( (<T>this.get( i )))
 			}
 		}
-		return newVec
+		return Vector.ofTransient( tVec )
 	}
 
 	map<Z,U>( callbackfn: ( this: Z, value: T, index: number, vec: Vector<T> ) => U, thisArg?: Z ): Vector<T> {
 		const iter = this.iterator()
-		const newVec = new Vector<T>()
+		const tVec = new TransientVector<T>()
 		while ( iter.hasNext()) {
-			newVec.__transientPush( callbackfn.call( thisArg, iter.getNext(), iter.index-1, this ))
+			tVec.push( callbackfn.call( thisArg, iter.getNext(), iter.index-1, this ))
 		}
-		return newVec
+		return Vector.ofTransient( tVec )
 	}
 
 	indexOf( v: T ): number {
@@ -463,11 +418,11 @@ export class Vector<T> {
 	}
 
 	reverse(): Vector<T> {
-		let vec = new Vector<T>()
+		let tVec = new TransientVector<T>()
 		for ( let i = this._length-1; i >= 0; i-- ) {
-			vec.push(( <T>this.get( i )))
+			tVec.push(( <T>this.get( i )))
 		}
-		return vec
+		return Vector.ofTransient( tVec )
 	}
 
 	sort( compareFn?: (a: T, b: T) => number ): Vector<T> {

@@ -1,4 +1,4 @@
-import { VectorNode } from './Vector'
+import { VectorNode } from './VectorNode'
 
 export class VectorIterator<T> {
 	protected stack: Array<VectorNode<T>>
