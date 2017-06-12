@@ -1,7 +1,8 @@
 {
 	"compilerOptions": {
 		"outDir": "./lib",
-		"module": "umd",
+		"module": "commonjs",
+		"moduleResolution": "node",
 		"strict": true,
 		"noImplicitAny": true,
 		"noImplicitThis": true,
@@ -12,8 +13,13 @@
 		"removeComments": true,
 		"preserveConstEnums": true,
 		"sourceMap": true,
+		"inlineSources": true,
 		"declaration": true,
-		"target": "es5"
+		"target": "es5",
+		"lib": [
+			"es5",
+			"es2015.iterable"
+		]
 	},
 	"include": [
 		"src/**/*"

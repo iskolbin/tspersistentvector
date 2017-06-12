@@ -1,5 +1,4 @@
 import { VectorNode } from './VectorNode'
-import { BITS, BRANCHING, MASK } from './VectorConst'
 
 export class TransientVector<T> {
 	length = 0
@@ -7,23 +6,28 @@ export class TransientVector<T> {
 	root: VectorNode<T> = undefined
 	tail: T[] = []
 	
-	constructor() {
+	constructor( arraylike?: T[] ) {
+		if ( arraylike ) {
+			for ( const v of arraylike ) {
+				this.push( v )
+			}
+		}
 	}
 	
 	protected pushLeaf( shift: number, i: number, root: VectorNode<T>, tail: T[] ): T[] {
 		if ( root !== undefined ) {
 			let node = root
-			for ( let level = shift; level > BITS; level -= BITS ) {
-				const subidx = (i >>> level) & MASK
+			for ( let level = shift; level > 5; level -= 5 ) {
+				const subidx = (i >>> level) & 31
 				let child = node[subidx]
 				if ( child === undefined ) {
-					node[subidx] = this.newPath( level - BITS, tail )
+					node[subidx] = this.newPath( level - 5, tail )
 					return root
 				}
 				node[subidx] = child
 				node = child
 			}
-			node[(i >>> BITS) & MASK] = tail
+			node[(i >>> 5) & 31] = tail
 			return root
 		} else {
 			return []
@@ -31,23 +35,23 @@ export class TransientVector<T> {
 	}
 
 	push( val: T ): TransientVector<T> {
-		const ts = this.length === 0 ? 0 : ((this.length - 1) & MASK) + 1
-		if ( ts !== BRANCHING ) {
+		const ts = this.length === 0 ? 0 : ((this.length - 1) & 31) + 1
+		if ( ts !== 32 ) {
 			this.tail.push( val )
 		} else { // have to insert tail into root.
 			const newTail = [val]
-			// Special case: If old size == BRANCHING, then tail is new root
-			if ( this.length === BRANCHING ) {
+			// Special case: If old size == 32, then tail is new root
+			if ( this.length === 32 ) {
 				this.root = this.tail
 				this.tail = newTail
 			} else {
 				// check if the root is completely filled. Must also increment
 				// shift if that's the case.
-				if (( this.length >>> BITS ) > ( 1 << this.shift )) {
-					const newRoot = new Array( BRANCHING )
+				if (( this.length >>> 5 ) > ( 1 << this.shift )) {
+					const newRoot = new Array( 32 )
 					newRoot[0] = this.root
 					newRoot[1] = this.newPath( this.shift, this.tail )
-					this.shift += BITS
+					this.shift += 5
 					this.root = newRoot
 					this.tail = newTail
 				} else { // still space in root
@@ -62,8 +66,8 @@ export class TransientVector<T> {
 
 	protected newPath( levels: number, tail: T[] ): T[] {
 		let topNode = tail
-		for ( let level = levels; level > 0; level -= BITS ) {
-			const newTop = new Array( BRANCHING )
+		for ( let level = levels; level > 0; level -= 5 ) {
+			const newTop = new Array( 32 )
 			newTop[0] = topNode
 			topNode = newTop
 		}
