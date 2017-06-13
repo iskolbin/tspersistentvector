@@ -3,7 +3,7 @@
   "main": "./lib/index.js",
   "repository": "github.com/iskolbin/tspersistentvector",
   "description": "Persistent Vector implementation, Java PVec port to TS",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "license": "MIT",
   "scripts": {
     "build": "./node_modules/typescript/bin/tsc",
