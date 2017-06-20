@@ -3,7 +3,7 @@ import {VectorIterator} from './VectorIterator'
 import {TransientVector} from './TransientVector'
 
 export interface Data<T> {
-	length: number
+	size: number
 	shift: number
 	root: VectorNode<T>
 	tail: T[]
@@ -12,24 +12,24 @@ export interface Data<T> {
 const EMPTY_TAIL: any[] = []
 
 export const NIL: Data<any> = {
-	length: 0,
+	size: 0,
 	shift: 0,
 	root: undefined,
 	tail: EMPTY_TAIL
 }
 
-function makeData<T>( length: number, shift: number, root: VectorNode<T>, tail: T[] ) {
-	return { length, shift, root, tail }
+function makeData<T>( size: number, shift: number, root: VectorNode<T>, tail: T[] ) {
+	return { size, shift, root, tail }
 }
 
 export function ofTransient<T>( tvec: TransientVector<T> ): Data<T> {
 	const result = {
-		length: tvec.length,
+		size: tvec.size,
 		shift: tvec.shift,
 		root: tvec.root,
 		tail: tvec.tail
 	}
-	tvec.length = 0
+	tvec.size = 0
 	tvec.shift = 0
 	tvec.root = undefined
 	tvec.tail = EMPTY_TAIL
@@ -44,9 +44,9 @@ export function of<T>( ...args: T[] ): Data<T> {
 	return make( args )
 }
 
-export function ofValue<T>( val: T, length: number ): Data<T> {
+export function ofValue<T>( val: T, size: number ): Data<T> {
 	const tvec = new TransientVector<T>()
-	for ( let i = 0; i < length; i++ ) {
+	for ( let i = 0; i < size; i++ ) {
 		tvec.push( val )
 	}
 	return ofTransient( tvec )
@@ -76,8 +76,8 @@ export function range( start: number, finish?: number, step?: number ): Data<num
 }
 
 
-export function clone<T>( {length, shift, root, tail}: Data<T> ): Data<T> {
-	return {length, shift, root, tail}
+export function clone<T>( {size, shift, root, tail}: Data<T> ): Data<T> {
+	return {size, shift, root, tail}
 }
 
 export function clear<T>( _vec: Data<T> ): Data<T> {
@@ -85,23 +85,23 @@ export function clear<T>( _vec: Data<T> ): Data<T> {
 }
 
 export function last<T>( vec: Data<T> ): T | undefined {
-	return get( vec, vec.length - 1 )
+	return get( vec, vec.size - 1 )
 }
 
 export function first<T>( vec: Data<T> ): T | undefined {
 	return get( vec, 0 )
 }
 
-export function isEmpty<T>( {length} : Data<T> ): boolean {
-	return length === 0
+export function isEmpty<T>( {size} : Data<T> ): boolean {
+	return size === 0
 }
 
 function tailOffset<T>( vec: Data<T> ): number {
-	return (vec.length - 1) & (~31)
+	return (vec.size - 1) & (~31)
 }
 
 export function get<T>( vec: Data<T>, i: number ): T | undefined {
-	if ( i < 0 || i >= vec.length ) {
+	if ( i < 0 || i >= vec.size ) {
 		return undefined
 	} else if ( i >= tailOffset( vec ) ) {
 		return vec.tail[i & 31]
@@ -124,30 +124,30 @@ function cloneArray<T>( xs: T[] | undefined ): T[] {
 
 export function push<T>( vec: Data<T>, ...values: T[] ): Data<T> {
 	for ( const val of values ) {
-		const ts = vec.length === 0 ? 0 : ((vec.length - 1) & 31) + 1
+		const ts = vec.size === 0 ? 0 : ((vec.size - 1) & 31) + 1
 		if ( ts !== 32 ) {
 			const newTail = cloneArray( vec.tail )
 			newTail.push( val )
-			vec = makeData( vec.length + 1, vec.shift, vec.root, newTail )
+			vec = makeData( vec.size + 1, vec.shift, vec.root, newTail )
 		} else { // have to insert tail into root.
 			const newTail = [val]
 			// Special case: If old size == 32, then tail is new root
-			if ( vec.length === 32 ) {
-				vec = makeData( vec.length + 1, 0, vec.tail, newTail )
+			if ( vec.size === 32 ) {
+				vec = makeData( vec.size + 1, 0, vec.tail, newTail )
 			}
 			// check if the root is completely filled. Must also increment
 			// shift if that's the case.
 			let newRoot
 			let newShift = vec.shift
-			if (( vec.length >>> 5 ) > ( 1 << vec.shift )) {
+			if (( vec.size >>> 5 ) > ( 1 << vec.shift )) {
 				newShift += 5
 				newRoot = new Array( 32 )
 				newRoot[0] = vec.root
 				newRoot[1] = newPath( vec.shift, vec.tail )
-				vec = makeData( vec.length + 1, newShift, newRoot, newTail )
+				vec = makeData( vec.size + 1, newShift, newRoot, newTail )
 			} else { // still space in root
-				newRoot = pushLeaf( vec.shift, vec.length - 1, vec.root, vec.tail )
-				vec = makeData( vec.length + 1, vec.shift, newRoot, newTail )
+				newRoot = pushLeaf( vec.shift, vec.size - 1, vec.root, vec.tail )
+				vec = makeData( vec.size + 1, vec.shift, newRoot, newTail )
 			}
 		}
 	}
@@ -155,12 +155,12 @@ export function push<T>( vec: Data<T>, ...values: T[] ): Data<T> {
 }
 
 export function set<T>( vec: Data<T>, i: number, val: T ): Data<T> {
-	if ( i < 0 || i >= vec.length || vec.root === undefined ) {
+	if ( i < 0 || i >= vec.size || vec.root === undefined ) {
 		return vec
 	} else if (i >= tailOffset( vec )) {
 		const newTail = [...vec.tail]
 		newTail[i & 31] = val
-		return makeData<T>( vec.length, vec.shift, vec.root, newTail )
+		return makeData<T>( vec.size, vec.shift, vec.root, newTail )
 	} else {
 		const newRoot = cloneArray( vec.root )
 		let node = newRoot
@@ -172,7 +172,7 @@ export function set<T>( vec: Data<T>, i: number, val: T ): Data<T> {
 			node = child
 		}
 		node[i & 31] = val
-		return makeData<T>( vec.length, vec.shift, newRoot, vec.tail )
+		return makeData<T>( vec.size, vec.shift, newRoot, vec.tail )
 	}
 }
 
@@ -187,16 +187,16 @@ export function update<T,K>( vec: Data<T>, i: number, callbackFn: (v: T, i: numb
 }
 
 export function pop<T>( vec: Data<T> ): Data<T> {
-	if ( vec.length <= 1 || vec.root === undefined ) {
+	if ( vec.size <= 1 || vec.root === undefined ) {
 		return NIL
-	} else if ((( vec.length - 1 ) & 31 ) > 0 ) {
+	} else if ((( vec.size - 1 ) & 31 ) > 0 ) {
 		// This one is curious: having int ts_1 = ((size-1) & 31) and using
-		// it is slower than using tail.length - 1 and newTail.length!
+		// it is slower than using tail.size - 1 and newTail.size!
 		const newTail = [...vec.tail]
 		newTail.pop()
-		return makeData<T>(vec.length - 1, vec.shift, vec.root, newTail)
+		return makeData<T>(vec.size - 1, vec.shift, vec.root, newTail)
 	}
-	const newTrieSize = vec.length - 32 - 1
+	const newTrieSize = vec.size - 32 - 1
 	// special case: if new size is 32, then new root turns is undefined, old
 	// root the tail
 	if ( newTrieSize === 0 ) {
@@ -212,7 +212,7 @@ export function pop<T>( vec: Data<T> ): Data<T> {
 		for ( let level = lowerShift; level > 0; level -= 5) {
 			node = node[0]
 		}
-		return makeData<T>(vec.length - 1, lowerShift, newRoot, node)
+		return makeData<T>(vec.size - 1, lowerShift, newRoot, node)
 	}
 
 	// diverges contain information on when the path diverges.
@@ -235,7 +235,7 @@ export function pop<T>( vec: Data<T> ): Data<T> {
 			node = child
 		}
 	}
-	return makeData<T>( vec.length - 1, vec.shift, newRoot, node )
+	return makeData<T>( vec.size - 1, vec.shift, newRoot, node )
 }
 
 
@@ -272,7 +272,7 @@ function pushLeaf<T>( shift: number, i: number, root: VectorNode<T>, tail: T[] )
 }
 
 export function iterator<T>( vec: Data<T> ): VectorIterator<T> {
-	return new VectorIterator<T>( vec.length, vec.shift, vec.root, vec.tail )
+	return new VectorIterator<T>( vec.size, vec.shift, vec.root, vec.tail )
 }
 
 export function forEach<T,Z,K>( vec: Data<T>, callbackFn: (this: Z, value: T, index: number, arg: K) => void, thisArg?: Z, callbackArg: any = vec ): void {
@@ -298,8 +298,8 @@ export function reduce<T,K,U>( vec: Data<T>, callbackFn: ( previousValue: U, cur
 export function reduceRight<T,K>( vec: Data<T>, callbackFn: ( previousValue: T, currentValue: T, currentIndex: number, arg: K ) => T, initialValue?: T, callbackArg?: any ): T
 export function reduceRight<T,K,U>( vec: Data<T>, callbackFn: ( previousValue: U, currentValue: T, currentIndex: number, arg: K ) => U, initialValue: U, callbackArg: any = vec ): U {
 	let acc = initialValue
-	let start = vec.length-1
-	if ( initialValue === undefined && vec.length > 0 ) {
+	let start = vec.size-1
+	if ( initialValue === undefined && vec.size > 0 ) {
 		acc = (<any>get( vec, start-- ))
 	}
 	for ( let i = start; i >= 0; i-- ) {
@@ -320,11 +320,23 @@ export function filter<T,K,Z>( vec: Data<T>, callbackFn: ( this: Z, value: T, in
 	return ofTransient( tvec )
 }
 
-export function slice<T>( vec: Data<T>, start: number = 0, end: number = vec.length ): Data<T> {
-	start = start < 0 ? vec.length + start : start
-	end = Math.min( vec.length, end < 0 ? vec.length + end : end )
+export function filterNot<T,K,Z>( vec: Data<T>, callbackFn: ( this: Z, value: T, index: number, arg: K ) => any, thisArg?: Z, callbackArg: any = vec ): Data<T> {
+	const iter = iterator( vec )
 	const tvec = new TransientVector<T>()
-	if ( start < end && end <= vec.length ) {
+	while ( iter.hasNext()) {
+		const v = iter.getNext()
+		if ( !callbackFn.call( thisArg, v, iter.index - 1, callbackArg )) {
+			tvec.push( v )
+		}
+	}
+	return ofTransient( tvec )
+}
+
+export function slice<T>( vec: Data<T>, start: number = 0, end: number = vec.size ): Data<T> {
+	start = start < 0 ? vec.size + start : start
+	end = Math.min( vec.size, end < 0 ? vec.size + end : end )
+	const tvec = new TransientVector<T>()
+	if ( start < end && end <= vec.size ) {
 		for ( let i = start; i < end; i++ ) {
 			tvec.push( (<T>get( vec, i )))
 		}
@@ -351,9 +363,55 @@ export function indexOf<T>( vec: Data<T>, v: T ): number {
 	return -1
 }
 
+export function includes<T>( vec: Data<T>, v: T ): boolean {
+	return indexOf( vec, v ) !== -1
+}
+
 export function lastIndexOf<T>( vec: Data<T>, v: T ): number {
-	for ( let i = vec.length-1; i >= 0; i-- ) {
+	for ( let i = vec.size-1; i >= 0; i-- ) {
 		if ( get( vec, i ) === v ) {
+			return i
+		}
+	}
+	return -1
+}
+
+export function find<T,K,Z>( vec: Data<T>, callbackFn: ( this: Z, value: T, index: number, arg: K ) => boolean, thisArg?: Z, callbackArg: any = vec ): T | undefined {
+	const iter = iterator( vec )
+	let index = 0
+	while ( iter.hasNext()) {
+		const value = iter.getNext()
+		if ( callbackFn.call( thisArg, value, index++, callbackArg )) {
+			return value
+		}
+	}
+	return undefined
+}
+
+export function findLast<T,K,Z>( vec: Data<T>, callbackFn: ( this: Z, value: T, index: number, arg: K ) => boolean, thisArg?: Z, callbackArg: any = vec ): T | undefined {
+	for ( let i = vec.size-1; i >= 0; i-- ) {
+		const value = get( vec, i )
+		if ( callbackFn.call( thisArg, value, i, callbackArg )) {
+			return value
+		}
+	}
+	return undefined
+}
+
+export function findIndex<T,K,Z>( vec: Data<T>, callbackFn: ( this: Z, value: T, index: number, arg: K ) => boolean, thisArg?: Z, callbackArg: any = vec ): number {
+	const iter = iterator( vec )
+	let index = 0
+	while ( iter.hasNext()) {
+		if ( callbackFn.call( thisArg, iter.getNext(), index++, callbackArg )) {
+			return index
+		}
+	}
+	return -1
+}
+
+export function findLastIndex<T,K,Z>( vec: Data<T>, callbackFn: ( this: Z, value: T, index: number, arg: K ) => boolean, thisArg?: Z, callbackArg: any = vec ): number {
+	for ( let i = vec.size-1; i >= 0; i-- ) {
+		if ( callbackFn.call( thisArg, get( vec, i ), i, callbackArg )) {
 			return i
 		}
 	}
@@ -390,11 +448,12 @@ export function some<T,K,Z>( vec: Data<T>, callbackFn: ( this: Z, value: T, inde
 }
 
 export function concat<T>( ...vectors: Data<T>[] ): Data<T> {
-	if ( vectors.length === 0 ) {
+	const len = vectors.length
+	if ( len === 0 ) {
 		return NIL
 	} else {
 		let result = vectors[0]
-		for ( let i = 1; i < vectors.length; i++ ) {
+		for ( let i = 1; i < len; i++ ) {
 			const iter = iterator( vectors[i] )
 			while ( iter.hasNext()) {
 				result = push( result, iter.getNext())
@@ -419,7 +478,7 @@ export function toString<T>( vec: Data<T> ) {
 
 export function reverse<T>( vec: Data<T> ): Data<T> {
 	let tvec = new TransientVector<T>()
-	for ( let i = vec.length-1; i >= 0; i-- ) {
+	for ( let i = vec.size-1; i >= 0; i-- ) {
 		tvec.push(( <T>get( vec, i )))
 	}
 	return ofTransient( tvec )
@@ -430,7 +489,6 @@ export function sort<T>( vec: Data<T>, compareFn?: (a: T, b: T) => number ): Dat
 }
 
 export function count<T,K,Z>( vec: Data<T>, callbackFn: ( this: Z, value: T, index: number, arg: K ) => boolean, thisArg?: Z, callbackArg: any = vec ): number {
-	
 	let counter = 0
 	const iter = iterator( vec )
 	while ( iter.hasNext()) {
@@ -442,10 +500,18 @@ export function count<T,K,Z>( vec: Data<T>, callbackFn: ( this: Z, value: T, ind
 }
 
 // TODO make more efficient
-export function splice<T>( vec: Data<T>, start: number, deleteCount: number = vec.length-start, ...items: T[] ) {
+export function splice<T>( vec: Data<T>, start: number, deleteCount: number = vec.size-start, ...items: T[] ) {
 	const arr = toArray( vec )
 	arr.splice( start, deleteCount, ...items )
 	return make( arr )
+}
+
+export function deleteAt<T>( vec: Data<T>, index: number ): Data<T> {
+	if ( index >= 0 && index < vec.size ) {
+		return splice( vec, index, 1 )
+	} else {
+		return vec
+	}
 }
 
 export class Vector<T> {
@@ -469,8 +535,8 @@ export class Vector<T> {
 		return vec instanceof Vector
 	}
 
-	static ofValue<T>( val: T, length: number ) {
-		return Vector.ofData( ofValue( val, length ))
+	static ofValue<T>( val: T, size: number ) {
+		return Vector.ofData( ofValue( val, size ))
 	}
 
 	static ofTransient<T>( tvec: TransientVector<T> ): Vector<T> {
@@ -497,8 +563,8 @@ export class Vector<T> {
 		return isEmpty( this.vec )
 	}
 
-	get length() {
-		return this.vec.length
+	get size() {
+		return this.vec.size
 	}
 
 	get( i: number ): T | undefined {
@@ -539,12 +605,20 @@ export class Vector<T> {
 		return Vector.ofData( filter( this.vec, callbackFn, thisArg, this ))
 	}
 
-	slice( start: number = 0, end: number = this.length ): Vector<T> {
+	filterNot<Z>( callbackFn: ( this: Z, value: T, index: number, vec: Vector<T> ) => any, thisArg?: Z ): Vector<T> {	
+		return Vector.ofData( filterNot( this.vec, callbackFn, thisArg, this ))
+	}
+
+	slice( start: number = 0, end: number = this.size ): Vector<T> {
 		return Vector.ofData( slice( this.vec, start, end ))
 	}
 
 	splice( start: number, deleteCount?: number, ...items: T[] ): Vector<T> {
 		return Vector.ofData( splice( this.vec, start, deleteCount, ...items ))
+	}
+
+	delete( index: number ): Vector<T> {
+		return Vector.ofData( deleteAt( this.vec, index ))
 	}
 
 	map<Z,U>( callbackFn: ( this: Z, value: T, index: number, vec: Vector<T> ) => U, thisArg?: Z ): Vector<T> {
@@ -555,8 +629,28 @@ export class Vector<T> {
 		return indexOf( this.vec, v )
 	}
 
+	includes( v: T ): boolean {
+		return includes( this.vec, v )
+	}
+
 	lastIndexOf( v: T ): number {
 		return lastIndexOf( this.vec, v )
+	}
+
+	find<Z>( callbackFn: ( this: Z, value: T, index: number, vec: Vector<T> ) => any, thisArg?: Z ): T | undefined {
+		return find( this.vec, callbackFn, thisArg, this )
+	}
+
+	findLast<Z>( callbackFn: ( this: Z, value: T, index: number, vec: Vector<T> ) => any, thisArg?: Z ): T | undefined {
+		return findLast( this.vec, callbackFn, thisArg, this )
+	}
+
+	findIndex<Z>( callbackFn: ( this: Z, value: T, index: number, vec: Vector<T> ) => any, thisArg?: Z ): number {
+		return findIndex( this.vec, callbackFn, thisArg, this )
+	}
+
+	findLastIndex<Z>( callbackFn: ( this: Z, value: T, index: number, vec: Vector<T> ) => any, thisArg?: Z ): number {
+		return findLastIndex( this.vec, callbackFn, thisArg, this )
 	}
 
 	toArray(): T[] {
