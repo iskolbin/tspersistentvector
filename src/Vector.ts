@@ -698,4 +698,3 @@ export class Vector<T> {
 if ( typeof Symbol !== 'undefined' && typeof Symbol.iterator !== 'undefined' ){
 	(<any>Vector).prototype[Symbol.iterator] = Vector.prototype.iterator
 }
-
