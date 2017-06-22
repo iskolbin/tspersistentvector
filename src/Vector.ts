@@ -186,9 +186,9 @@ export function update<T,Y>( vec: Data<T>, i: number, callbackFn: (v: T, i: numb
 }
 
 function popOne<T>( vec: Data<T> ): Data<T> {
-	if ( vec.size <= 1 || vec.root === undefined ) {
+	if ( vec.size <= 1 ) {
 		return NIL
-	} else if ((( vec.size - 1 ) & 31 ) > 0 ) {
+	} else if ((( vec.size - 1 ) & 31 ) > 0 || vec.root === undefined ) {
 		// This one is curious: having int ts_1 = ((size-1) & 31) and using
 		// it is slower than using tail.size - 1 and newTail.size!
 		const newTail = [...vec.tail]
@@ -238,11 +238,15 @@ function popOne<T>( vec: Data<T> ): Data<T> {
 }
 
 export function pop<T>( vec: Data<T>, count: number = 1 ): Data<T> {
-	let result = vec
-	while ( count-- > 0 ) {
-		result = popOne( result )
+	if ( count > vec.size ) {
+		return NIL as Data<T>
+	} else {
+		let result = vec
+		while ( count-- > 0 ) {
+			result = popOne( result )
+		}
+		return result
 	}
-	return result
 }
 
 function newPath<T>( levels: number, tail: T[] ): T[] {
