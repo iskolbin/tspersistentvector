@@ -171,4 +171,147 @@ import { assert, deepEqual, throws } from "assert"
 	pushToRange64() {
 		deepEqual( Vector.push( Vector.range(64), 64,65,66 ), Vector.range(67) )
 	}
+
+	@test("push 1023,1024 to range(1023)")
+	pushToRange1024() {
+		deepEqual( Vector.push( Vector.range(1023), 1023,1024 ), Vector.range(1025) )
+	}
+
+	@test("get from empty")
+	getFromEmpty() {
+		deepEqual( Vector.get( Vector.of(), 0 ), undefined )
+	}
+
+	@test("get from range(32)")
+	getFromRange32() {
+		const v = Vector.range(32)
+		for ( let i = 0; i < 32; i++ ) deepEqual( Vector.get( v, i ), i )
+	}
+
+	@test("get from range(64)")
+	getFromRange64() {
+		const v = Vector.range(64)
+		for ( let i = 0; i < 64; i++ ) deepEqual( Vector.get( v, i ), i )
+	}
+	
+	@test("get from range(128)")
+	getFromRange128() {
+		const v = Vector.range(128)
+		for ( let i = 0; i < 128; i++ ) deepEqual( Vector.get( v, i ), i )
+	}
+
+	@test("get from range(1025)")
+	getFromRange1025() {
+		const v = Vector.range(1025)
+		for ( let i = 0; i < 1025; i++ ) deepEqual( Vector.get( v, i ), i )
+	}
+
+	@test("set to empty")
+	setEmpty() {
+		deepEqual( Vector.set( Vector.of(), 1, 1 ), Vector.of())
+	}
+
+	@test("set to range(16)")
+	setRange16() {
+		deepEqual( Vector.set( Vector.range(16), 7, -7 ), Vector.of(0,1,2,3,4,5,6,-7,8,9,10,11,12,13,14,15))
+	}
+
+	@test("set to range(31,32,63,64,1025,2500)")
+	setRange32() {
+		for ( const n of [31,32,63,64,1025,1100,2500] ) {
+			let v = Vector.range(n)
+			for ( let i = 0; i < n; i++ ) {
+				v = Vector.set( v, i, i !== 0 ? -i : i )
+			}
+			deepEqual( v, Vector.range(-n))
+		}
+	}
+
+	@test("update out of range")
+	updateOut() {
+		deepEqual( Vector.update( Vector.range(16), 32, v => v + 1 ), Vector.range(16))
+	}
+	
+	@test("update range(16)")
+	updateRange16() {
+		deepEqual( Vector.update( Vector.range(16), 7, v => -v ), Vector.of(0,1,2,3,4,5,6,-7,8,9,10,11,12,13,14,15))
+	}
+
+	@test("pop empty")
+	popEmpty() {
+		deepEqual( Vector.pop( Vector.of()), Vector.of())
+	}
+
+	@test("pop range(16,31,32,33,63,64,64,1023,1024,1025,3000) default count")
+	popRanges16() {
+		for ( const n of [16,31,32,33,63,64,64,1023,1024,1025,300]) {
+			deepEqual( Vector.pop( Vector.range(n)), Vector.range( n-1 ))
+		}
+	}
+
+	@test("pop range(16,31,32,33,63,64,64,1023,1024,1025,3000) for counts 1, 2, 10")
+	popRangesCounts() {
+		for ( const n of [16,31,32,33,63,64,64,1023,1024,1025,300]) {
+			for ( const popCount of [1,2,10] ) {
+				deepEqual( Vector.pop( Vector.range(n), popCount ), Vector.range( n-popCount ))
+			}
+		}
+	}
+
+	@test("toArray 16,31,32,33,63,64,65,1023,1024,1025,2845")
+	toArray() {
+		for ( const n of [16,31,32,33,63,64,64,1023,1024,1025,2845]) {
+			const range = []
+			for ( let i = 0; i < n; i++ ) {
+				range[i] = i
+			}
+			deepEqual( Vector.toArray( Vector.range(n)), range )
+		}
+	}
+
+	@test("forEach")
+	forEach() {
+		const array = []
+		const range = []
+		for ( let i = 0; i < 2883; i++ ) {
+			range[i] = i
+		}
+		Vector.forEach( Vector.range(2883), v => array.push(v))
+		deepEqual( array, range )
+		deepEqual( Vector.make( range ), Vector.range( 2883 ))
+	}
+
+	@test("reduce")
+	reduce() {
+		deepEqual( Vector.reduce( Vector.repeat( 1, 100 ), (acc,v) => acc + v ), 100 )
+		deepEqual( Vector.reduce( Vector.repeat( 1, 100 ), (acc,v) => acc + v, 50 ), 150 )
+		deepEqual( Vector.reduce( Vector.range(16), (acc: number[],v:number): number[] => acc.concat([v]), [-1]), [-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15])
+	}
+
+	@test("reduceRight")
+	reduceRight() {
+		deepEqual( Vector.reduceRight( Vector.repeat( 1, 100 ), (acc,v) => acc + v ), 100 )
+		deepEqual( Vector.reduceRight( Vector.repeat( 1, 100 ), (acc,v) => acc + v, 50 ), 150 )
+	}
+
+	@test("finished iterator")
+	finishedIterator() {
+		const iter = Vector.iterator( Vector.range(10))
+		for ( let i = 0; i < 10; i++ ) iter.getNext()
+		try {
+			iter.getNext()
+			deepEqual( false, true )
+		} catch (e) {
+			deepEqual( true, true )
+		}
+	}
+
+	@test("iteration")
+	iteration() {
+		const x = []
+		for ( const v of { [Symbol.iterator]: () => Vector.iterator( Vector.range(16))}) {
+			x.push( v )
+		}
+		deepEqual( x, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] )
+	}
 }

@@ -14,24 +14,20 @@ export class TransientVector<T> {
 		}
 	}
 	
-	protected pushLeaf( shift: number, i: number, root: VectorNode<T>, tail: T[] ): T[] {
-		if ( root !== undefined ) {
-			let node = root
-			for ( let level = shift; level > 5; level -= 5 ) {
-				const subidx = (i >>> level) & 31
-				let child = node[subidx]
-				if ( child === undefined ) {
-					node[subidx] = this.newPath( level - 5, tail )
-					return root
-				}
-				node[subidx] = child
-				node = child
+	protected pushLeaf( shift: number, i: number, root: any[], tail: T[] ): T[] {
+		let node = root
+		for ( let level = shift; level > 5; level -= 5 ) {
+			const subidx = (i >>> level) & 31
+			let child = node[subidx]
+			if ( child === undefined ) {
+				node[subidx] = this.newPath( level - 5, tail )
+				return root as T[]
 			}
-			node[(i >>> 5) & 31] = tail
-			return root
-		} else {
-			return []
+			node[subidx] = child
+			node = child
 		}
+		node[(i >>> 5) & 31] = tail
+		return root
 	}
 
 	push( val: T ): TransientVector<T> {
@@ -55,7 +51,7 @@ export class TransientVector<T> {
 					this.root = newRoot
 					this.tail = newTail
 				} else { // still space in root
-					this.root = this.pushLeaf( this.shift, this.size - 1, this.root, this.tail )
+					this.root = this.pushLeaf( this.shift, this.size - 1, this.root as any[], this.tail )
 					this.tail = newTail
 				}
 			}
