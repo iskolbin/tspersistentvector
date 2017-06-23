@@ -134,20 +134,21 @@ export function push<T>( vec: Data<T>, ...values: T[] ): Data<T> {
 			// Special case: If old size == 32, then tail is new root
 			if ( vec.size === 32 ) {
 				vec = makeData( vec.size + 1, 0, vec.tail, newTail )
-			}
-			// check if the root is completely filled. Must also increment
-			// shift if that's the case.
-			let newRoot
-			let newShift = vec.shift
-			if (( vec.size >>> 5 ) > ( 1 << vec.shift )) {
-				newShift += 5
-				newRoot = new Array( 32 )
-				newRoot[0] = vec.root
-				newRoot[1] = newPath( vec.shift, vec.tail )
-				vec = makeData( vec.size + 1, newShift, newRoot, newTail )
-			} else { // still space in root
-				newRoot = pushLeaf( vec.shift, vec.size - 1, vec.root, vec.tail )
-				vec = makeData( vec.size + 1, vec.shift, newRoot, newTail )
+			} else {
+				// check if the root is completely filled. Must also increment
+				// shift if that's the case.
+				let newRoot
+				let newShift = vec.shift
+				if (( vec.size >>> 5 ) > ( 1 << vec.shift )) {
+					newShift += 5
+					newRoot = new Array( 32 )
+					newRoot[0] = vec.root
+					newRoot[1] = newPath( vec.shift, vec.tail )
+					vec = makeData( vec.size + 1, newShift, newRoot, newTail )
+				} else { // still space in root
+					newRoot = pushLeaf( vec.shift, vec.size - 1, vec.root, vec.tail )
+					vec = makeData( vec.size + 1, vec.shift, newRoot, newTail )
+				}
 			}
 		}
 	}

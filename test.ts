@@ -96,6 +96,29 @@ import { assert, deepEqual, throws } from "assert"
 		))
 	}
 
+	@test("range(43,10)")
+	range43to10() {
+		deepEqual( Vector.range( 43, 10 ), Vector.of(
+			43,
+			42,41,40,39,38,37,36,35,34,33,32,31,30,29,28,27,
+			26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11
+		))
+	}
+
+	@test("range(43,10,-2)")
+	range43to10by_2() {
+		deepEqual( Vector.range( 43, 10, -2 ), Vector.of(
+			43,
+			41,39,37,35,33,31,29,27,
+			25,23,21,19,17,15,13,11
+		))
+	}
+
+	@test("range(43,10,4)")
+	range43to10by4() {
+		deepEqual( Vector.range( 43, 10, 4 ), Vector.of())
+	}
+
 	@test("clone")
 	clone() {
 		const v = Vector.range( 10, 40 )
@@ -122,5 +145,30 @@ import { assert, deepEqual, throws } from "assert"
 	isEmpty() {
 		deepEqual( Vector.isEmpty( Vector.make()), true )
 		deepEqual( Vector.isEmpty( Vector.clear( Vector.of(1,2,3,4) )), true )
+	}
+
+	@test("push 1 to empty")
+	pushToEmpty() {
+		deepEqual( Vector.push( Vector.of(), 1 ), Vector.of( 1 ))
+	}
+
+	@test("push 31 to range(31)")
+	pushToRange31() {
+		deepEqual( Vector.push( Vector.range(31), 31 ), Vector.range(32) )
+	}
+
+	@test("push 32 to range(32)")
+	pushToRange32() {
+		deepEqual( Vector.push( Vector.range(32), 32 ), Vector.range(33) )
+	}
+
+	@test("push 63 to range(63)")
+	pushToRange63() {
+		deepEqual( Vector.push( Vector.range(63), 63 ), Vector.range(64) )
+	}
+
+	@test("push 65,66,67 to range(64)")
+	pushToRange64() {
+		deepEqual( Vector.push( Vector.range(64), 64,65,66 ), Vector.range(67) )
 	}
 }
