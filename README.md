@@ -93,8 +93,6 @@ Folds
 
 `Vector.join<T>( vec: Vector.Data<T>, separator: string = ',' ): string`
 
-`Vector.toString<T>( vec: Vector.Data<T> ): string`
-
 
 Slice & splice
 --------------
