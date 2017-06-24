@@ -36,8 +36,8 @@ export function ofTransient<T>( tvec: TransientVector<T> ): Data<T> {
 	return result
 }
 
-export function make<T>( arraylike?: T[] ): Data<T> {
-	return ofTransient( new TransientVector( arraylike ))
+export function make<T>( iterable?: T[] /* Iterable<T> */ ): Data<T> {
+	return ofTransient( new TransientVector( iterable ))
 }
 
 export function of<T>( ...args: T[] ): Data<T> {
@@ -114,12 +114,8 @@ export function get<T>( vec: Data<T>, i: number ): T | undefined {
 	}
 }
 
-function cloneArray<T>( xs: T[] | undefined ): T[] {
-	if ( xs ) {
-		return [...xs]
-	} else {
-		return []
-	}
+function cloneArray<T>( xs: T[] ): T[] {
+	return xs.slice()//[...xs]
 }
 
 function pushOne<T>( vec: Data<T>, val: T ): Data<T> {
@@ -151,8 +147,9 @@ function pushOne<T>( vec: Data<T>, val: T ): Data<T> {
 }
 
 export function push<T>( vec: Data<T>, ...values: T[] ): Data<T> {
-	for ( let i = 0; i < values.length; i++ ) {//val of values ) {
-		vec = pushOne( vec, values[i] )
+	/* for ( const val of values ) { */
+	for ( let i = 0, val = values[0]; i < values.length; i++, val = values[i] ) {
+		vec = pushOne( vec, val )
 	}
 	return vec
 }
@@ -161,7 +158,7 @@ export function set<T>( vec: Data<T>, i: number, val: T ): Data<T> {
 	if ( i < 0 || i >= vec.size ) {
 		return vec
 	} else if (i >= tailOffset( vec )) {
-		const newTail = [...vec.tail]
+		const newTail = cloneArray( vec.tail )
 		newTail[i & 31] = val
 		return makeData<T>( vec.size, vec.shift, vec.root, newTail )
 	} else {
@@ -194,7 +191,7 @@ function popOne<T>( vec: Data<T> ): Data<T> {
 	} else if ((( vec.size - 1 ) & 31 ) > 0 || vec.root === undefined ) {
 		// This one is curious: having int ts_1 = ((size-1) & 31) and using
 		// it is slower than using tail.size - 1 and newTail.size!
-		const newTail = [...vec.tail]
+		const newTail = cloneArray( vec.tail )
 		newTail.pop()
 		return makeData<T>(vec.size - 1, vec.shift, vec.root, newTail)
 	}
@@ -229,11 +226,7 @@ function popOne<T>( vec: Data<T> ): Data<T> {
 			node = child
 		} else if (( diverges >>> level ) !== 0 ) {
 			hasDiverged = true
-			if ( subidx+1 === node.length ) {
-				node.pop()
-			} else {
-				node[subidx] = undefined
-			}
+			node.pop()
 			node = child
 		} else {
 			child = cloneArray( child )
@@ -245,15 +238,11 @@ function popOne<T>( vec: Data<T> ): Data<T> {
 }
 
 export function pop<T>( vec: Data<T>, count: number = 1 ): Data<T> {
-	if ( count >= vec.size ) {
-		return NIL
-	} else {
-		let result = vec
-		while ( count-- > 0 ) {
-			result = popOne( result )
-		}
-		return result
+	let result = vec
+	while ( count-- > 0 ) {
+		result = popOne( result )
 	}
+	return result
 }
 
 function newPath<T>( levels: number, tail: T[] ): any[] {
@@ -264,26 +253,22 @@ function newPath<T>( levels: number, tail: T[] ): any[] {
 	return topNode
 }
 
-function pushLeaf<T>( shift: number, i: number, root: VectorNode<T>, tail: T[] ): T[] {
-	if ( root !== undefined ) {
-		const newRoot = cloneArray( root )
-		let node = newRoot
-		for ( let level = shift; level > 5; level -= 5) {
-			const subidx = (i >>> level) & 31
-			let child = node[subidx]
-			if ( child === undefined ) {
-				node[subidx] = newPath( level - 5, tail )
-				return newRoot
-			}
-			child = cloneArray( child )
-			node[subidx] = child
-			node = child
+function pushLeaf<T>( shift: number, i: number, root: any[], tail: T[] ): T[] {
+	const newRoot = cloneArray( root )
+	let node = newRoot
+	for ( let level = shift; level > 5; level -= 5) {
+		const subidx = (i >>> level) & 31
+		let child = node[subidx]
+		if ( child === undefined ) {
+			node[subidx] = newPath( level - 5, tail )
+			return newRoot
 		}
-		node[(i >>> 5) & 31] = tail
-		return newRoot
-	} else {
-		return []
+		child = cloneArray( child )
+		node[subidx] = child
+		node = child
 	}
+	node[(i >>> 5) & 31] = tail
+	return newRoot
 }
 
 export function iterator<T>( vec: Data<T> ): VectorIterator<T> {
@@ -559,11 +544,11 @@ export function remove<T>( vec: Data<T>, index: number, count: number = 1 ): Dat
 	return splice( vec, index, count )
 }
 
-export class Vector<T> implements Iterable<T> {
+export class Vector<T> /* implements Iterable<T> */ {
 	protected vec: Data<T>
 
-	constructor( array?: T[] ) {
-		this.vec = make( array )
+	constructor( iterable?: T[] /* Iterable<T> */ ) {
+		this.vec = make( iterable )
 	}
 
 	get data() {

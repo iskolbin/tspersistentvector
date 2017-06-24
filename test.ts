@@ -270,6 +270,7 @@ import { assert, deepEqual, throws } from "assert"
 	
 	@test("pop empty")
 	popEmpty() {
+		deepEqual( Vector.pop( Vector.of( 1 )), Vector.of())
 		deepEqual( Vector.pop( Vector.of()), Vector.of())
 		deepEqual( Vector.Vector.of().pop().data, Vector.of())
 	}
@@ -543,7 +544,12 @@ import { assert, deepEqual, throws } from "assert"
 		deepEqual( Vector.slice( Vector.range( 100 )), Vector.range( 100 ))
 		deepEqual( Vector.slice( Vector.range( 100 ), 50 ), Vector.range( 50, 100 ))
 		deepEqual( Vector.slice( Vector.range( 100 ), 50, 70 ), Vector.range( 50, 70 ))
+		deepEqual( Vector.slice( Vector.range( 100 ), 30, 10 ), Vector.of())
 		deepEqual( Vector.Vector.range( 100 ).slice( 50, 70 ).data, Vector.range( 50, 70 ))
+		deepEqual( Vector.Vector.range(100).slice().data, Vector.range( 100 ))
+		deepEqual( Vector.Vector.range(100).slice( 50 ).data, Vector.range( 50, 100 ))
+		deepEqual( Vector.Vector.range(100).slice( 50, -10 ).data, Vector.range( 50, 90 ))
+		deepEqual( Vector.Vector.range(100).slice( -50, -10 ).data, Vector.range( 50, 90 ))
 	}
 
 	@test("is")
@@ -563,4 +569,29 @@ import { assert, deepEqual, throws } from "assert"
 	splice() {
 		deepEqual( Vector.Vector.range( 100 ).splice( 50 ).data, Vector.range( 50 ))
 	}
+
+	@test("simulation")
+	simulation() {
+		let v = new Vector.Vector()
+		for ( let i = 0; i < 32*32*32; i++ ) {
+			v = v.push( i )
+		}
+		for ( let i = 0; i < 32*32*32; i++ ) {
+			v = v.pop()
+		}
+		deepEqual( v.data, Vector.of())
+	}
+
+	/*
+	@test("es2015")
+	es2015() {
+		const v = Vector.make( new Map<string,number[]>( [["a",[1,2]],["b",[3,4]],["c",[5]]] ))
+		deepEqual( v, Vector.make( [["a",[1,2]],["b",[3,4]],["c",[5]]] ))
+		let x = []
+		for ( const y of Vector.Vector.of( 1, 2, 3, 4, 5 )) {
+			x.push( y )
+		}
+		deepEqual( x, [1,2,3,4,5] )
+	}
+	*/
 } 

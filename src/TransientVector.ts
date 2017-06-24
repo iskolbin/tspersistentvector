@@ -6,9 +6,10 @@ export class TransientVector<T> {
 	root: VectorNode<T> = undefined
 	tail: T[] = []
 	
-	constructor( arraylike?: T[] ) {
-		if ( arraylike ) {
-			for ( const v of arraylike ) {
+	constructor( iterable?: T[] /* Iterable<T> */ ) {
+		if ( iterable ) {
+			/* for ( const v of iterable ) { */
+			for ( let i = 0, v = iterable[0]; i < iterable.length; i++, v = iterable[i] ) {
 				this.push( v )
 			}
 		}
