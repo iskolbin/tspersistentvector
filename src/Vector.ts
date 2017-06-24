@@ -139,7 +139,7 @@ function pushOne<T>( vec: Data<T>, val: T ): Data<T> {
 				newRoot = [vec.root, newPath( vec.shift, vec.tail )]
 				return makeData( vec.size + 1, newShift, newRoot, newTail )
 			} else { // still space in root
-				newRoot = pushLeaf( vec.shift, vec.size - 1, vec.root, vec.tail )
+				newRoot = pushLeaf( vec.shift, vec.size - 1, vec.root as any[], vec.tail )
 				return makeData( vec.size + 1, vec.shift, newRoot, newTail )
 			}
 		}
@@ -162,7 +162,7 @@ export function set<T>( vec: Data<T>, i: number, val: T ): Data<T> {
 		newTail[i & 31] = val
 		return makeData<T>( vec.size, vec.shift, vec.root, newTail )
 	} else {
-		const newRoot = cloneArray( vec.root )
+		const newRoot = cloneArray( vec.root as any[] )
 		let node = newRoot
 		for ( let level = vec.shift; level > 0; level -= 5 ) {
 			const subidx = (i >>> level) & 31
