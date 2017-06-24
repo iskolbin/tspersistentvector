@@ -1,6 +1,6 @@
 import { VectorNode } from './VectorNode'
 
-export class VectorIterator<T> {
+export class VectorIterator<T> implements Iterator<T> {
 	protected stack: Array<VectorNode<T>>
 	protected leaf: VectorNode<T>
   protected _index: number
@@ -68,9 +68,9 @@ export class VectorIterator<T> {
 		}	
 	}
 
-	next(): { value: T | undefined, done: boolean } {	
+	next(): IteratorResult<T> {
 		return this.hasNext() ?
-			{ value: this.getNext(), done: false } :
-			{ value: undefined, done: true }
+		{ value: this.getNext(), done: false } :
+		{ value: (<any>undefined), done: true }
 	}
 }

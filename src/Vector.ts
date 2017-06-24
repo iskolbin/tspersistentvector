@@ -122,33 +122,37 @@ function cloneArray<T>( xs: T[] | undefined ): T[] {
 	}
 }
 
-export function push<T>( vec: Data<T>, ...values: T[] ): Data<T> {
-	for ( const val of values ) {
-		const ts = vec.size === 0 ? 0 : ((vec.size - 1) & 31) + 1
-		if ( ts !== 32 ) {
-			const newTail = cloneArray( vec.tail )
-			newTail.push( val )
-			vec = makeData( vec.size + 1, vec.shift, vec.root, newTail )
-		} else { // have to insert tail into root.
-			const newTail = [val]
-			// Special case: If old size == 32, then tail is new root
-			if ( vec.size === 32 ) {
-				vec = makeData( vec.size + 1, 0, vec.tail, newTail )
-			} else {
-				// check if the root is completely filled. Must also increment
-				// shift if that's the case.
-				let newRoot
-				let newShift = vec.shift
-				if (( vec.size >>> 5 ) > ( 1 << vec.shift )) {
-					newShift += 5
-					newRoot = [vec.root, newPath( vec.shift, vec.tail )]
-					vec = makeData( vec.size + 1, newShift, newRoot, newTail )
-				} else { // still space in root
-					newRoot = pushLeaf( vec.shift, vec.size - 1, vec.root, vec.tail )
-					vec = makeData( vec.size + 1, vec.shift, newRoot, newTail )
-				}
+function pushOne<T>( vec: Data<T>, val: T ): Data<T> {
+	const ts = vec.size === 0 ? 0 : ((vec.size - 1) & 31) + 1
+	if ( ts !== 32 ) {
+		const newTail = cloneArray( vec.tail )
+		newTail.push( val )
+		return makeData( vec.size + 1, vec.shift, vec.root, newTail )
+	} else { // have to insert tail into root.
+		const newTail = [val]
+		// Special case: If old size == 32, then tail is new root
+		if ( vec.size === 32 ) {
+			return makeData( vec.size + 1, 0, vec.tail, newTail )
+		} else {
+			// check if the root is completely filled. Must also increment
+			// shift if that's the case.
+			let newRoot
+			let newShift = vec.shift
+			if (( vec.size >>> 5 ) > ( 1 << vec.shift )) {
+				newShift += 5
+				newRoot = [vec.root, newPath( vec.shift, vec.tail )]
+				return makeData( vec.size + 1, newShift, newRoot, newTail )
+			} else { // still space in root
+				newRoot = pushLeaf( vec.shift, vec.size - 1, vec.root, vec.tail )
+				return makeData( vec.size + 1, vec.shift, newRoot, newTail )
 			}
 		}
+	}
+}
+
+export function push<T>( vec: Data<T>, ...values: T[] ): Data<T> {
+	for ( let i = 0; i < values.length; i++ ) {//val of values ) {
+		vec = pushOne( vec, values[i] )
 	}
 	return vec
 }
@@ -494,10 +498,6 @@ export function join<T>( vec: Data<T>, separator: string = ',' ): string {
 	return strAcc.join( separator )
 }
 
-export function toString<T>( vec: Data<T> ) {
-	return join( vec )
-}
-
 export function reverse<T>( vec: Data<T> ): Data<T> {
 	let tvec = new TransientVector<T>()
 	for ( let i = vec.size-1; i >= 0; i-- ) {
@@ -506,8 +506,19 @@ export function reverse<T>( vec: Data<T> ): Data<T> {
 	return ofTransient( tvec )
 }
 
+function defaultCompareNumbers( a: number, b: number ) {
+	return a - b
+}
+
 export function sort<T>( vec: Data<T>, compareFn?: (a: T, b: T) => number ): Data<T> {
-	return make( toArray( vec ).sort( compareFn ))
+	if ( vec.size > 1 ) {
+		if ( compareFn === undefined && typeof( get( vec, 0 )) === 'number' ) {
+			compareFn = (<any>defaultCompareNumbers)
+		}
+		return make( toArray( vec ).sort( compareFn ))
+	} else {
+		return vec
+	}
 }
 
 export function count<T,Z,Y>( vec: Data<T>, callbackFn: ( this: Z, value: T, index: number, arg: Y ) => boolean, thisArg?: Z, arg: any = vec ): number {
@@ -548,11 +559,15 @@ export function remove<T>( vec: Data<T>, index: number, count: number = 1 ): Dat
 	return splice( vec, index, count )
 }
 
-export class Vector<T> {
+export class Vector<T> implements Iterable<T> {
 	protected vec: Data<T>
 
 	constructor( array?: T[] ) {
 		this.vec = make( array )
+	}
+
+	get data() {
+		return this.vec
 	}
 
 	static ofData<T>( vec: Data<T> ): Vector<T> {
@@ -625,14 +640,12 @@ export class Vector<T> {
 		forEach( this.vec, callbackFn, thisArg, this )
 	}
 
-	reduce( callbackFn: ( previousValue: T, currentValue: T, currentIndex: number, vec: Vector<T> ) => T, initialValue?: T ): T
-	reduce<U>( callbackFn: ( previousValue: U, currentValue: T, currentIndex: number, vec: Vector<T> ) => U, initialValue: U ): U {
-		return reduce( (<any>this.vec), (<any>callbackFn), (<any>initialValue), this )
+	reduce<U=T>( callbackFn: ( previousValue: U, currentValue: T, currentIndex: number, vec: Vector<T> ) => U, initialValue?: U ): U {
+		return reduce( this.vec, callbackFn, initialValue, this )
 	}
 	
-	reduceRight( callbackFn: ( previousValue: T, currentValue: T, currentIndex: number, vec: Vector<T> ) => T, initialValue?: T ): T
-	reduceRight<U>( callbackFn: ( previousValue: U, currentValue: T, currentIndex: number, vec: Vector<T> ) => U, initialValue: U ): U {
-		return reduceRight( (<any>this.vec), (<any>callbackFn), (<any>initialValue), this )
+	reduceRight<U=T>( callbackFn: ( previousValue: U, currentValue: T, currentIndex: number, vec: Vector<T> ) => U, initialValue?: U ): U {
+		return reduceRight( this.vec, callbackFn, initialValue, this )
 	}
 
 	filter<Z>( callbackFn: ( this: Z, value: T, index: number, vec: Vector<T> ) => boolean, thisArg?: Z ): Vector<T> {	
@@ -651,16 +664,20 @@ export class Vector<T> {
 		return Vector.ofData( slice( this.vec, start, end ))
 	}
 
+	insert( start: number, ...values: T[] ): Vector<T> {
+		return this.splice( start, 0, ...values )
+	}
+
 	splice( start: number, deleteCount?: number, ...values: T[] ): Vector<T> {
 		return Vector.ofData( splice( this.vec, start, deleteCount, ...values ))
 	}
 
-	remove( index: number, count: number = 1 ): Vector<T> {
-		return Vector.ofData( remove( this.vec, index, count ))
+	remove( start: number, count: number = 1 ): Vector<T> {
+		return this.splice( start, count )
 	}
 
-	delete( index: number, count: number = 1 ): Vector<T> {
-		return this.remove( index, count )
+	delete( start: number, count: number = 1 ): Vector<T> {
+		return this.splice( start, count )
 	}
 
 	map<U,Z>( callbackFn: ( this: Z, value: T, index: number, vec: Vector<T> ) => U, thisArg?: Z ): Vector<T> {
@@ -735,8 +752,8 @@ export class Vector<T> {
 	iterator(): VectorIterator<T> {
 		return iterator( this.vec )
 	}
-}
 
-if ( typeof Symbol !== 'undefined' && typeof Symbol.iterator !== 'undefined' ){
-	(<any>Vector).prototype[Symbol.iterator] = Vector.prototype.iterator
+	[Symbol.iterator]() {
+		return this.iterator()
+	}
 }
