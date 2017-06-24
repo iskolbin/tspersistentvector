@@ -141,9 +141,7 @@ export function push<T>( vec: Data<T>, ...values: T[] ): Data<T> {
 				let newShift = vec.shift
 				if (( vec.size >>> 5 ) > ( 1 << vec.shift )) {
 					newShift += 5
-					newRoot = new Array( 32 )
-					newRoot[0] = vec.root
-					newRoot[1] = newPath( vec.shift, vec.tail )
+					newRoot = [vec.root, newPath( vec.shift, vec.tail )]
 					vec = makeData( vec.size + 1, newShift, newRoot, newTail )
 				} else { // still space in root
 					newRoot = pushLeaf( vec.shift, vec.size - 1, vec.root, vec.tail )
@@ -254,12 +252,10 @@ export function pop<T>( vec: Data<T>, count: number = 1 ): Data<T> {
 	}
 }
 
-function newPath<T>( levels: number, tail: T[] ): T[] {
-	let topNode = tail
+function newPath<T>( levels: number, tail: T[] ): any[] {
+	let topNode: any[] = tail
 	for ( let level = levels; level > 0; level -= 5 ) {
-		const newTop = new Array( 32 )
-		newTop[0] = topNode
-		topNode = newTop
+		topNode = [topNode]
 	}
 	return topNode
 }
@@ -297,9 +293,7 @@ export function forEach<T,Z,Y>( vec: Data<T>, callbackFn: ( this: Z, value: T, i
 	}
 }
 
-export function reduce<T,Y>( vec: Data<T>, callbackFn: ( previousValue: T, currentValue: T, currentIndex: number, arg: any ) => T, initialValue?: T, arg?: Y ): T
-export function reduce<T,U,Y>( vec: Data<T>, callbackFn: ( previousValue: U, currentValue: T, currentIndex: number, arg: Y ) => U, initialValue: U, arg?: Y ): U
-export function reduce<T,Y>( vec: Data<T>, callbackFn: ( previousValue: any, currentValue: T, currentIndex: number, arg: Y ) => any, initialValue: any, arg: any = vec ): any {
+export function reduce<T,U=T,Y=any>( vec: Data<T>, callbackFn: ( previousValue: U, currentValue: T, currentIndex: number, arg: Y ) => U, initialValue?: U, arg: Y = (<any>vec) ): U {
 	const iter = iterator( vec )
 	let acc = initialValue
 	if ( initialValue === undefined && iter.hasNext()) {
@@ -308,11 +302,10 @@ export function reduce<T,Y>( vec: Data<T>, callbackFn: ( previousValue: any, cur
 	while ( iter.hasNext()) {
 		acc = callbackFn.call( null, acc, iter.getNext(), iter.index-1, arg )
 	}
-	return acc
+	return acc as U
 }
 	
-export function reduceRight<T,Y>( vec: Data<T>, callbackFn: ( previousValue: T, currentValue: T, currentIndex: number, arg: Y ) => T, initialValue?: T, arg?: any ): T
-export function reduceRight<T,U,Y>( vec: Data<T>, callbackFn: ( previousValue: U, currentValue: T, currentIndex: number, arg: Y ) => U, initialValue: U, arg: any = vec ): U {
+export function reduceRight<T,U=T,Y=any>( vec: Data<T>, callbackFn: ( previousValue: U, currentValue: T, currentIndex: number, arg: Y ) => U, initialValue?: U, arg: Y = (<any>vec) ): U {
 	let acc = initialValue
 	let start = vec.size-1
 	if ( initialValue === undefined && vec.size > 0 ) {
@@ -321,7 +314,7 @@ export function reduceRight<T,U,Y>( vec: Data<T>, callbackFn: ( previousValue: U
 	for ( let i = start; i >= 0; i-- ) {
 		acc = callbackFn.call( null, acc, get( vec, i ), i, arg )
 	}
-	return acc
+	return acc as U
 }
 
 export function sum( vec: Data<number> ): number {
@@ -408,9 +401,10 @@ export function find<T,Z,Y>( vec: Data<T>, callbackFn: ( this: Z, value: T, inde
 	let index = 0
 	while ( iter.hasNext()) {
 		const value = iter.getNext()
-		if ( callbackFn.call( thisArg, value, index++, arg )) {
+		if ( callbackFn.call( thisArg, value, index, arg )) {
 			return value
 		}
+		index++
 	}
 	return undefined
 }
@@ -429,9 +423,10 @@ export function findIndex<T,Z,Y>( vec: Data<T>, callbackFn: ( this: Z, value: T,
 	const iter = iterator( vec )
 	let index = 0
 	while ( iter.hasNext()) {
-		if ( callbackFn.call( thisArg, iter.getNext(), index++, arg )) {
+		if ( callbackFn.call( thisArg, iter.getNext(), index, arg )) {
 			return index
 		}
+		index++
 	}
 	return -1
 }

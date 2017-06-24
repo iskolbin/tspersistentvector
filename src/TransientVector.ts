@@ -44,9 +44,7 @@ export class TransientVector<T> {
 				// check if the root is completely filled. Must also increment
 				// shift if that's the case.
 				if (( this.size >>> 5 ) > ( 1 << this.shift )) {
-					const newRoot = new Array( 32 )
-					newRoot[0] = this.root
-					newRoot[1] = this.newPath( this.shift, this.tail )
+					const newRoot = [this.root, this.newPath( this.shift, this.tail )]
 					this.shift += 5
 					this.root = newRoot
 					this.tail = newTail
@@ -60,12 +58,10 @@ export class TransientVector<T> {
 		return this
 	}
 
-	protected newPath( levels: number, tail: T[] ): T[] {
-		let topNode = tail
+	protected newPath( levels: number, tail: T[] ): any[] {
+		let topNode: any[] = tail
 		for ( let level = levels; level > 0; level -= 5 ) {
-			const newTop = new Array( 32 )
-			newTop[0] = topNode
-			topNode = newTop
+			topNode = [topNode]
 		}
 		return topNode
 	}

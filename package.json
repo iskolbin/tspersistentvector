@@ -3,11 +3,11 @@
   "main": "./lib/index.js",
   "repository": "github.com/iskolbin/tspersistentvector",
   "description": "Persistent Vector implementation, Java PVec port to TS",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "license": "MIT",
   "scripts": {
     "build": "./node_modules/typescript/bin/tsc",
-    "test": "./node_modules/typescript/bin/tsc --lib es5,es2015.iterable --experimentalDecorators -t es5 --downlevelIteration test.ts && ./node_modules/nyc/bin/nyc.js --reporter html --reporter text ./node_modules/mocha/bin/mocha test.js",
+    "test": "./node_modules/typescript/bin/tsc --lib es5,es2015.iterable,dom --experimentalDecorators -t es5 --downlevelIteration test.ts && ./node_modules/nyc/bin/nyc.js --reporter html --reporter text ./node_modules/mocha/bin/mocha test.js",
     "prepublish": "npm run build"
   },
   "devDependencies": {

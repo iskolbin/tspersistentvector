@@ -216,14 +216,15 @@ import { assert, deepEqual, throws } from "assert"
 		deepEqual( Vector.set( Vector.range(16), 7, -7 ), Vector.of(0,1,2,3,4,5,6,-7,8,9,10,11,12,13,14,15))
 	}
 
-	@test("set to range(31,32,63,64,1025,2500)")
+	@test("set to range(31,32,63,64,1025,1057,2500)")
 	setRange32() {
-		for ( const n of [31,32,63,64,1025,1100,2500] ) {
+		for ( const n of [31,32,63,64,1025,1057,2500] ) {
 			let v = Vector.range(n)
 			for ( let i = 0; i < n; i++ ) {
 				v = Vector.set( v, i, i !== 0 ? -i : i )
 			}
-			deepEqual( v, Vector.range(-n))
+			const range = Vector.range( -n )
+			deepEqual( v, range )
 		}
 	}
 
@@ -285,13 +286,14 @@ import { assert, deepEqual, throws } from "assert"
 	reduce() {
 		deepEqual( Vector.reduce( Vector.repeat( 1, 100 ), (acc,v) => acc + v ), 100 )
 		deepEqual( Vector.reduce( Vector.repeat( 1, 100 ), (acc,v) => acc + v, 50 ), 150 )
-		deepEqual( Vector.reduce( Vector.range(16), (acc: number[],v:number): number[] => acc.concat([v]), [-1]), [-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15])
+		deepEqual( Vector.reduce( Vector.range(16), (acc,v) => acc.concat([v]), [-1]), [-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15])
 	}
 
 	@test("reduceRight")
 	reduceRight() {
 		deepEqual( Vector.reduceRight( Vector.repeat( 1, 100 ), (acc,v) => acc + v ), 100 )
 		deepEqual( Vector.reduceRight( Vector.repeat( 1, 100 ), (acc,v) => acc + v, 50 ), 150 )
+		deepEqual( Vector.reduceRight( Vector.range( 100 ), (acc,v) => acc.concat([v]), [] as number[] ), Vector.toArray( Vector.range(100)).reverse())
 	}
 
 	@test("finished iterator")
@@ -313,5 +315,69 @@ import { assert, deepEqual, throws } from "assert"
 			x.push( v )
 		}
 		deepEqual( x, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] )
+	}
+
+	@test("sum")
+	sum() {
+		deepEqual( Vector.sum( Vector.repeat( 10, 10 )), 100 )
+	}
+
+	@test("reverse")
+	reverse() {
+		deepEqual( Vector.range( 100 ), Vector.reverse( Vector.range( 99, -1 )))
+	}
+
+	@test("filter")
+	filter() {
+		deepEqual( Vector.filter( Vector.range( 1500 ), v => v < 750 ), Vector.range( 750 ))
+	}
+	
+	@test("reject")
+	reject() {
+		deepEqual( Vector.reject( Vector.range( 1500 ), v => v < 750 ), Vector.range( 750, 1500 ))
+	}
+
+	@test("indexOf")
+	indexOf() {
+		deepEqual( Vector.indexOf( Vector.range( 1000 ), 500 ), 500 )
+		deepEqual( Vector.indexOf( Vector.repeat( 0, 1000 ), 0 ), 0 )
+		deepEqual( Vector.indexOf( Vector.repeat( 0, 1000 ), 1 ), -1 )
+	}
+	
+	@test("lastIndexOf")
+	lastIndexOf() {
+		deepEqual( Vector.lastIndexOf( Vector.range( 1000 ), 500 ), 500 )
+		deepEqual( Vector.lastIndexOf( Vector.repeat( 0, 1000 ), 0 ), 999 )
+		deepEqual( Vector.indexOf( Vector.repeat( 0, 1000 ), 1 ), -1 )
+	}
+
+	@test("find")
+	find() {
+		deepEqual( Vector.find( Vector.range( 1000 ), i => i > 500 ), 501 )
+		deepEqual( Vector.find( Vector.range( 1000 ), i => i > 1500 ), undefined )
+	}
+
+	@test("findLast")
+	findLast() {
+		deepEqual( Vector.findLast( Vector.range( 1000 ), i => i > 500 ), 999 )
+		deepEqual( Vector.findLast( Vector.range( 1000 ), i => i > 1500 ), undefined )
+	}
+	
+	@test("findIndex")
+	findIndex() {
+		deepEqual( Vector.findIndex( Vector.range( 1000 ), i => i > 500 ), 501 )
+		deepEqual( Vector.findIndex( Vector.range( 1000 ), i => i > 1500 ), -1 )
+	}
+
+	@test("findLastIndex")
+	findLastIndex() {
+		deepEqual( Vector.findLastIndex( Vector.range( 1000 ), i => i > 500 ), 999 )
+		deepEqual( Vector.findLastIndex( Vector.range( 1000 ), i => i > 1500 ), -1 )
+	}
+	
+	@test("includes")
+	includes() {
+		deepEqual( Vector.includes( Vector.range( 1060 ), 514 ), true )
+		deepEqual( Vector.includes( Vector.range( 1060 ), 1514 ), false )
 	}
 }
