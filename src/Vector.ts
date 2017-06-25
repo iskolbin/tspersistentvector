@@ -146,10 +146,12 @@ function pushOne<T>( vec: Data<T>, val: T ): Data<T> {
 	}
 }
 
-export function push<T>( vec: Data<T>, ...values: T[] ): Data<T> {
-	/* for ( const val of values ) { */
-	for ( let i = 0, val = values[0]; i < values.length; i++, val = values[i] ) {
-		vec = pushOne( vec, val )
+export function push<T>( vec: Data<T>, ...values: T[] ): Data<T>
+export function push<T>( vec: Data<T> ): Data<T> {
+	if ( arguments.length > 1 ) {
+		for ( let i = 1, val = arguments[1]; i < arguments.length; i++, val = arguments[i] ) {
+			vec = pushOne( vec, val )
+		}
 	}
 	return vec
 }
@@ -605,8 +607,22 @@ export class Vector<T> /* implements Iterable<T> */ {
 		return get( this.vec, i )
 	}
 
-	push( ...values: T[] ): Vector<T> {
-		return Vector.ofData( push( this.vec, ...values ))
+	push( ...values: T[] ): Vector<T>
+	push(): Vector<T> {
+		switch ( arguments.length ) {
+			case 0:
+				return this
+			case 1:
+				return Vector.ofData( pushOne( this.vec, arguments[0] ))
+			default:
+				let vec = this.vec
+				if ( arguments.length > 0 ) {
+					for ( let i = 0, val = arguments[0]; i < arguments.length; i++, val = arguments[i] ) {
+						vec = pushOne( vec, val )
+					}
+				}
+				return Vector.ofData( vec )
+		}
 	}
 
 	set( i: number, val: T ): Vector<T> {
