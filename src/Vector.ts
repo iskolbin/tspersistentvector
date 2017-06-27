@@ -3,6 +3,7 @@ import {VectorIterator} from './VectorIterator'
 import {TransientVector} from './TransientVector'
 
 export interface Data<T> {
+	kind: "PersistentVector"
 	size: number
 	shift: number
 	root: VectorNode<T>
@@ -12,18 +13,20 @@ export interface Data<T> {
 const EMPTY_TAIL: any[] = []
 
 export const NIL: Data<any> = {
+	kind: "PersistentVector",
 	size: 0,
 	shift: 0,
 	root: undefined,
 	tail: EMPTY_TAIL
 }
 
-function makeData<T>( size: number, shift: number, root: VectorNode<T>, tail: T[] ) {
-	return { size, shift, root, tail }
+function makeData<T>( size: number, shift: number, root: VectorNode<T>, tail: T[] ): Data<T> {
+	return { kind: "PersistentVector", size, shift, root, tail }
 }
 
 export function ofTransient<T>( tvec: TransientVector<T> ): Data<T> {
-	const result = {
+	const result: Data<T> = {
+		kind: "PersistentVector",
 		size: tvec.size,
 		shift: tvec.shift,
 		root: tvec.root,
@@ -77,7 +80,7 @@ export function range( start: number, finish?: number, step?: number ): Data<num
 
 
 export function clone<T>( {size, shift, root, tail}: Data<T> ): Data<T> {
-	return {size, shift, root, tail}
+	return {kind: "PersistentVector", size, shift, root, tail}
 }
 
 export function clear<T>( _vec: Data<T> ): Data<T> {
