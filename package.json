@@ -1,9 +1,10 @@
 {
   "name": "tspersistentvector",
   "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
   "repository": "github.com/iskolbin/tspersistentvector",
   "description": "Persistent Vector implementation, Java PVec port to TS",
-  "version": "0.5.10",
+  "version": "0.5.11",
   "license": "MIT",
   "scripts": {
     "build": "./node_modules/typescript/bin/tsc",
