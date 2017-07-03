@@ -7,10 +7,10 @@
     "type": "git",
     "url": "https://github.com/iskolbin/tspersistentvector.git"
   },
-	"bugs": "https://github.com/iskolbin/tspersistentvector/issues",
+  "bugs": "https://github.com/iskolbin/tspersistentvector/issues",
   "types": "./lib/index.d.ts",
   "repository": "github.com/iskolbin/tspersistentvector",
-	"keywords": ["persistent","collection","persistent-vector","fast-random-access"],
+  "keywords": ["persistent","collection","persistent-vector","fast-random-access"],
   "license": "MIT",
   "scripts": {
     "build": "./node_modules/typescript/bin/tsc",
