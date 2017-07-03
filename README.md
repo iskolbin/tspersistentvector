@@ -5,6 +5,8 @@
 Persistent Vector
 =================
 
+This is a port of [Java persistent vector implementation](https://github.com/hyPiRion/pvec-perf/tree/master/pvec).
+
 Functions
 =========
 

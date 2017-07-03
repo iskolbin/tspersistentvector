@@ -1,10 +1,16 @@
 {
   "name": "tspersistentvector",
+  "version": "0.5.12",
+  "description": "Persistent Vector implementation, Java PVec port to TS",
   "main": "./lib/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iskolbin/tspersistentvector.git"
+  },
+	"bugs": "https://github.com/iskolbin/tspersistentvector/issues",
   "types": "./lib/index.d.ts",
   "repository": "github.com/iskolbin/tspersistentvector",
-  "description": "Persistent Vector implementation, Java PVec port to TS",
-  "version": "0.5.11",
+	"keywords": ["persistent","collection","persistent-vector","fast-random-access"],
   "license": "MIT",
   "scripts": {
     "build": "./node_modules/typescript/bin/tsc",
